@@ -1,0 +1,1750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flat File DB V3</title>
+  <style>
+    body {
+      font-family: monospace;
+      margin: 0;
+      padding: 16px;
+      background: #f7f7f7;
+      color: #111;
+    }
+    h1, h2, h3 {
+      margin: 0 0 8px 0;
+    }
+    .row {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+    .panel {
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      box-sizing: border-box;
+      overflow: hidden;
+      flex: 1 1 480px;
+      min-width: 320px;
+    }
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      background: #f2f2f2;
+      border-bottom: 1px solid #ccc;
+    }
+    .panel-header button {
+      width: auto;
+      min-width: auto;
+      padding: 4px 8px;
+      margin: 0;
+    }
+    .panel-body {
+      padding: 12px;
+    }
+    .panel.collapsed .panel-body {
+      display: none;
+    }
+    label {
+      display: block;
+      margin-top: 8px;
+      font-weight: bold;
+    }
+    input, textarea, select, button {
+      font: inherit;
+      width: 100%;
+      box-sizing: border-box;
+      margin-top: 4px;
+      padding: 8px;
+      border: 1px solid #999;
+      border-radius: 4px;
+      background: white;
+    }
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+    button {
+      cursor: pointer;
+    }
+    .button-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+    .button-row button {
+      width: auto;
+      min-width: 140px;
+    }
+    .record-list {
+      max-height: 320px;
+      overflow: auto;
+      border: 1px solid #ccc;
+      padding: 8px;
+      border-radius: 6px;
+      background: #fafafa;
+    }
+    .record-item {
+      padding: 6px;
+      border-bottom: 1px solid #ddd;
+      cursor: pointer;
+    }
+    .record-item:hover {
+      background: #eef;
+    }
+    .record-item.active {
+      background: #dde8ff;
+    }
+    .small {
+      font-size: 12px;
+      color: #444;
+    }
+    .muted {
+      color: #666;
+    }
+    pre {
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: #fafafa;
+      border: 1px solid #ccc;
+      padding: 10px;
+      border-radius: 6px;
+      min-height: 180px;
+      margin: 6px 0 0 0;
+    }
+    .inline {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      width: auto;
+      margin-right: 16px;
+      font-weight: normal;
+    }
+    .status-box {
+      background: #fafafa;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      padding: 8px;
+      margin-top: 8px;
+    }
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .pill {
+      display: inline-block;
+      padding: 2px 8px;
+      border: 1px solid #999;
+      border-radius: 999px;
+      font-size: 12px;
+      margin-left: 8px;
+    }
+    .dialog-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.35);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .dialog {
+      background: white;
+      width: min(640px, 94vw);
+      border-radius: 10px;
+      border: 1px solid #aaa;
+      padding: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+    .choice-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .choice-grid button {
+      width: 100%;
+      text-align: left;
+      min-width: 0;
+    }
+    .toolbar {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+  </style>
+</head>
+<body>
+  <h1>Flat File DB V3</h1>
+  <p class="small">
+    Single-file flat-file relational prototype with Normal / Shared / Child tables, readable text records,
+    folder-based storage, search, dropdown binding, auto-save on blur, and persisted UI state.
+  </p>
+  <div class="row" style="margin-top:0;">
+    <section class="panel" data-panel-key="about">
+      <div class="panel-header">
+        <h2><button class="toggle-panel-btn" data-target="about">▼</button> About</h2>
+      </div>
+      <div class="panel-body">
+        <div class="status-box">
+          <strong>Flat File DB V3</strong>
+          <p class="small">
+            A browser-based, schema-driven, human-readable flat-file database with relational structure,
+            folder-based storage, and user-owned data.
+          </p>
+          <p class="small"><strong>Lineage:</strong> Gear-Up 1.0 → Intuitus → Flat File DB V3</p>
+          <p class="small"><strong>Created by:</strong> Michel Kasday</p>
+          <p class="small"><strong>Development model:</strong> Human–EBI cognitive co-development with ChatGPT (OpenAI)</p>
+          <p class="small"><strong>License:</strong> GPL-3.0</p>
+          <div class="button-row">
+            <button id="aboutRepoBtn">Open Project Repository</button>
+            <button id="aboutHistoryBtn">Show Development History</button>
+          </div>
+          <div id="aboutDetails" class="small" style="display:none; margin-top:10px; white-space:pre-wrap; border:1px solid #ccc; padding:10px; border-radius:6px; background:#fafafa;">Flat File DB V3
+
+Created by Michel Kasday
+Developed through human–EBI cognitive co-development with ChatGPT (OpenAI)
+
+This project continues a lineage of ideas spanning more than two decades:
+- Gear-Up 1.0 (2001)
+- Intuitus (unreleased successor concept)
+- Flat File DB V3 (current realization)
+
+Core principles:
+- human-readable data
+- user-owned storage
+- transparent structure
+- graceful degradation
+- relational behavior built from simple primitives
+
+Replace the repository URL in the code when your GitHub repo is ready.</div>
+        </div>
+      </div>
+    </section>
+  </div>
+  <div class="row" style="margin-top:0;">
+    <section class="panel" data-panel-key="storage">
+      <div class="panel-header">
+        <h2><button class="toggle-panel-btn" data-target="storage">▼</button> Storage</h2>
+      </div>
+      <div class="panel-body">
+        <div class="button-row">
+          <button id="chooseFolderBtn">Choose Database Folder</button>
+          <button id="reloadFolderBtn">Reload From Folder</button>
+          <button id="saveAllBtn">Save All To Folder</button>
+        </div>
+        <div class="status-box small" id="storageStatus">Folder storage not connected. Browser storage fallback is active.</div>
+        <div class="toolbar" style="margin-top:10px;">
+          <label class="inline">
+            <input id="saveModeAuto" type="radio" name="saveMode" value="auto" style="width:auto;" checked /> Auto-save on blur
+          </label>
+          <label class="inline">
+            <input id="saveModeManual" type="radio" name="saveMode" value="manual" style="width:auto;" /> Manual save only
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" data-panel-key="tableDesigner">
+      <div class="panel-header">
+        <h2><button class="toggle-panel-btn" data-target="tableDesigner">▼</button> Table Designer</h2>
+      </div>
+      <div class="panel-body">
+        <div class="two-col">
+          <div>
+            <label for="tableName">Table name</label>
+            <input id="tableName" value="personnel" />
+          </div>
+          <div>
+            <label for="tableModeSelect">Table mode</label>
+            <select id="tableModeSelect">
+              <option value="Normal">Normal</option>
+              <option value="Shared">Shared</option>
+              <option value="Child">Child</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="two-col">
+          <div>
+            <label for="parentTableSelect">Parent table</label>
+            <select id="parentTableSelect"></select>
+          </div>
+          <div>
+            <label for="tableDefaultView">Default view</label>
+            <select id="tableDefaultView">
+              <option value="design">Design</option>
+              <option value="data_entry">Data Entry</option>
+            </select>
+          </div>
+        </div>
+
+        <label for="fieldsInput">Fields (one per line: name:type)</label>
+        <textarea id="fieldsInput">display_name:string
+sort_name:string
+status:drop
+notes:block</textarea>
+
+        <div class="button-row">
+          <button id="buildSchemaBtn">Build Schema</button>
+          <button id="loadSampleBtn">Load Sample Schema</button>
+          <button id="saveSchemaBtn">Save Schema</button>
+        </div>
+
+        <label for="schemaPreview">Schema preview</label>
+        <pre id="schemaPreview"></pre>
+      </div>
+    </section>
+  </div>
+
+  <div class="row">
+    <section class="panel" data-panel-key="tableExplorer">
+      <div class="panel-header">
+        <h2><button class="toggle-panel-btn" data-target="tableExplorer">▼</button> Tables</h2>
+      </div>
+      <div class="panel-body">
+        <div class="button-row">
+          <button id="refreshTablesBtn">Refresh Tables</button>
+        </div>
+        <div class="record-list" id="tableList"></div>
+      </div>
+    </section>
+
+    <section class="panel" data-panel-key="editor">
+      <div class="panel-header">
+        <h2><button class="toggle-panel-btn" data-target="editor">▼</button> Record Editor</h2>
+      </div>
+      <div class="panel-body">
+        <div id="dynamicForm"></div>
+        <div class="button-row">
+          <button id="newRecordBtn">New Record</button>
+          <button id="saveRecordBtn">Save Record</button>
+          <button id="exportRecordBtn">Download Record</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="row">
+    <section class="panel" data-panel-key="records">
+      <div class="panel-header">
+        <h2><button class="toggle-panel-btn" data-target="records">▼</button> Stored Records</h2>
+      </div>
+      <div class="panel-body">
+        <div class="button-row">
+          <button id="refreshListBtn">Refresh List</button>
+          <button id="exportManifestBtn">Download Manifest</button>
+        </div>
+        <div class="record-list" id="recordList"></div>
+      </div>
+    </section>
+
+    <section class="panel" data-panel-key="recordText">
+      <div class="panel-header">
+        <h2><button class="toggle-panel-btn" data-target="recordText">▼</button> Record Text / Import</h2>
+      </div>
+      <div class="panel-body">
+        <label for="recordText">Record text</label>
+        <textarea id="recordText"></textarea>
+        <div class="button-row">
+          <button id="parseTextBtn">Parse Text Into Form</button>
+          <button id="importTextBtn">Import Record Text</button>
+        </div>
+        <label for="fileInput">Import downloaded .txt/.md file</label>
+        <input id="fileInput" type="file" />
+      </div>
+    </section>
+  </div>
+
+  <div class="row">
+    <section class="panel" data-panel-key="search">
+      <div class="panel-header">
+        <h2><button class="toggle-panel-btn" data-target="search">▼</button> Search</h2>
+      </div>
+      <div class="panel-body">
+        <label for="searchInput">Search text</label>
+        <input id="searchInput" placeholder="Enter text to search" />
+
+        <label for="searchFieldSelect">Field scope</label>
+        <select id="searchFieldSelect"></select>
+
+        <div class="button-row">
+          <button id="searchBtn">Search</button>
+          <button id="prevMatchBtn">Previous Match</button>
+          <button id="nextMatchBtn">Next Match</button>
+          <button id="clearSearchBtn">Clear Search</button>
+        </div>
+
+        <label class="inline">
+          <input id="caseInsensitiveCheckbox" type="checkbox" checked style="width:auto;" />
+          Case-insensitive search
+        </label>
+
+        <p class="small" id="searchStatus">No active search.</p>
+        <div class="record-list" id="searchResults"></div>
+      </div>
+    </section>
+
+    <section class="panel" data-panel-key="relationships">
+      <div class="panel-header">
+        <h2><button class="toggle-panel-btn" data-target="relationships">▼</button> Relationships</h2>
+      </div>
+      <div class="panel-body">
+        <label for="childTableSelect">Child table</label>
+        <select id="childTableSelect"></select>
+        <div class="button-row">
+          <button id="newChildRecordBtn">New Child Record For Current Parent</button>
+          <button id="showChildrenBtn">Show Child Records</button>
+        </div>
+        <p class="small" id="subtableStatus">No parent/child action yet.</p>
+        <div class="record-list" id="childRecordList"></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="dialog-backdrop" id="dropDialogBackdrop">
+    <div class="dialog">
+      <h3 id="dropDialogTitle">Bind dropdown field</h3>
+      <p class="small" id="dropDialogMessage"></p>
+      <div class="choice-grid" id="dropDialogChoices"></div>
+      <div class="button-row">
+        <button id="dropDialogBackBtn">Back</button>
+        <button id="dropDialogNextBtn">Next</button>
+        <button id="dropDialogCancelBtn">Cancel</button>
+        <button id="dropDialogOkBtn">Okay</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const DB_KEY = 'flatfile_db_v3';
+    const PROJECT_REPO_URL = 'https://github.com/your-account/flatfile-db';
+
+    const DEFAULT_UI_STATE = {
+      about: true,
+      storage: true,
+      tableDesigner: true,
+      tableExplorer: true,
+      editor: true,
+      records: true,
+      recordText: false,
+      search: true,
+      relationships: true,
+      default_view: 'design'
+    };
+
+    const state = {
+      schema: null,
+      currentRecordId: null,
+      currentRecordOriginal: {},
+      searchResults: [],
+      currentMatchIndex: -1,
+      folderHandle: null,
+      globalUiState: structuredClone(DEFAULT_UI_STATE),
+      dropBindingsPending: [],
+      dropDialog: {
+        open: false,
+        phase: 'table',
+        index: 0,
+        page: 0,
+        selectedTable: '',
+        selectedField: ''
+      }
+    };
+
+    function clone(value) {
+      return JSON.parse(JSON.stringify(value));
+    }
+
+    function getDB() {
+      const raw = localStorage.getItem(DB_KEY);
+      if (!raw) return { schemas: {}, records: {}, settings: { global_ui_state: clone(DEFAULT_UI_STATE) } };
+      try {
+        const db = JSON.parse(raw);
+        db.schemas ||= {};
+        db.records ||= {};
+        db.settings ||= { global_ui_state: clone(DEFAULT_UI_STATE) };
+        db.settings.global_ui_state ||= clone(DEFAULT_UI_STATE);
+        return db;
+      } catch (error) {
+        console.error('Failed to parse DB:', error);
+        return { schemas: {}, records: {}, settings: { global_ui_state: clone(DEFAULT_UI_STATE) } };
+      }
+    }
+
+    function saveDB(db) {
+      localStorage.setItem(DB_KEY, JSON.stringify(db, null, 2));
+    }
+
+    function loadGlobalUiState() {
+      const db = getDB();
+      state.globalUiState = { ...clone(DEFAULT_UI_STATE), ...(db.settings?.global_ui_state || {}) };
+    }
+
+    function persistGlobalUiState() {
+      const db = getDB();
+      db.settings ||= {};
+      db.settings.global_ui_state = state.globalUiState;
+      saveDB(db);
+    }
+
+    function setStorageStatus(message) {
+      document.getElementById('storageStatus').textContent = message;
+    }
+
+    function currentSaveMode() {
+      return document.getElementById('saveModeAuto').checked ? 'auto' : 'manual';
+    }
+
+    function slugify(value) {
+      return String(value || '')
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '') || 'record';
+    }
+
+    function schemaParentTable(schema) {
+      return schema?.parent_table || '';
+    }
+
+    function parentFieldNameForTable(parentTable) {
+      return parentTable ? `${parentTable}_id` : '';
+    }
+
+    function parseFieldLines(text) {
+      return text
+        .split(/\r?\n/)
+        .map(line => line.trim())
+        .filter(Boolean)
+        .map(line => {
+          const parts = line.split(':');
+          return {
+            name: (parts[0] || '').trim(),
+            type: (parts[1] || 'string').trim().toLowerCase(),
+            source_table: '',
+            source_field: ''
+          };
+        })
+        .filter(field => field.name);
+    }
+
+    function renderSchemaPreview(schema) {
+      document.getElementById('schemaPreview').textContent = schema ? JSON.stringify(schema, null, 2) : '';
+    }
+
+    function refreshParentTableOptions() {
+      const db = getDB();
+      const parentSelect = document.getElementById('parentTableSelect');
+      const childSelect = document.getElementById('childTableSelect');
+      const names = Object.keys(db.schemas).sort();
+
+      parentSelect.innerHTML = '';
+      childSelect.innerHTML = '';
+
+      const blankParent = document.createElement('option');
+      blankParent.value = '';
+      blankParent.textContent = '(none)';
+      parentSelect.appendChild(blankParent);
+
+      names.filter(name => db.schemas[name].table_mode !== 'Child').forEach(name => {
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = `${name} (${db.schemas[name].table_mode})`;
+        parentSelect.appendChild(opt);
+      });
+
+      const blankChild = document.createElement('option');
+      blankChild.value = '';
+      blankChild.textContent = '(select child table)';
+      childSelect.appendChild(blankChild);
+
+      if (state.schema) {
+        names.filter(name => db.schemas[name].table_mode === 'Child' && db.schemas[name].parent_table === state.schema.table).forEach(name => {
+          const opt = document.createElement('option');
+          opt.value = name;
+          opt.textContent = `${name} (Child of ${db.schemas[name].parent_table})`;
+          childSelect.appendChild(opt);
+        });
+      }
+    }
+
+    function refreshTableList() {
+      const db = getDB();
+      const host = document.getElementById('tableList');
+      host.innerHTML = '';
+      const names = Object.keys(db.schemas).sort();
+      if (!names.length) {
+        host.textContent = 'No tables defined yet.';
+        return;
+      }
+      names.forEach(name => {
+        const schema = db.schemas[name];
+        const div = document.createElement('div');
+        div.className = 'record-item';
+        const relation = schema.parent_table ? ` → ${schema.parent_table}` : '';
+        div.innerHTML = `<strong>${name}</strong><span class="pill">${schema.table_mode}</span><span class="small">${relation}</span>`;
+        div.onclick = () => loadSchemaIntoDesigner(schema.table);
+        host.appendChild(div);
+      });
+    }
+
+    function applyPanelUiState(uiState) {
+      const merged = { ...clone(DEFAULT_UI_STATE), ...(uiState || {}) };
+      document.querySelectorAll('[data-panel-key]').forEach(panel => {
+        const key = panel.dataset.panelKey;
+        const open = key in merged ? merged[key] : true;
+        panel.classList.toggle('collapsed', !open);
+        const btn = panel.querySelector('.toggle-panel-btn');
+        if (btn) btn.textContent = open ? '▼' : '▶';
+      });
+      document.getElementById('tableDefaultView').value = merged.default_view || 'design';
+    }
+
+    function collectPanelUiState() {
+      const ui = { default_view: document.getElementById('tableDefaultView').value };
+      document.querySelectorAll('[data-panel-key]').forEach(panel => {
+        ui[panel.dataset.panelKey] = !panel.classList.contains('collapsed');
+      });
+      return ui;
+    }
+
+    function handlePanelToggle(key) {
+      const panel = document.querySelector(`[data-panel-key="${key}"]`);
+      if (!panel) return;
+      panel.classList.toggle('collapsed');
+      const open = !panel.classList.contains('collapsed');
+      panel.querySelector('.toggle-panel-btn').textContent = open ? '▼' : '▶';
+
+      if (state.schema) {
+        state.schema.ui_state ||= clone(DEFAULT_UI_STATE);
+        state.schema.ui_state[key] = open;
+        saveSchemaOnlyToBrowser(state.schema);
+      } else {
+        state.globalUiState[key] = open;
+        persistGlobalUiState();
+      }
+    }
+
+    function tableModeChanged() {
+      const mode = document.getElementById('tableModeSelect').value;
+      const parentSelect = document.getElementById('parentTableSelect');
+      parentSelect.disabled = mode !== 'Child';
+    }
+
+    function collectDropBindings(fields) {
+      return fields
+        .map((field, index) => ({ ...field, index }))
+        .filter(field => field.type === 'drop' && !field.source_table);
+    }
+
+    function buildSchemaObject() {
+      const tableName = document.getElementById('tableName').value.trim();
+      const tableMode = document.getElementById('tableModeSelect').value;
+      const parentTable = tableMode === 'Child' ? document.getElementById('parentTableSelect').value.trim() : '';
+      let fields = parseFieldLines(document.getElementById('fieldsInput').value);
+
+      if (!tableName) {
+        alert('Table name is required.');
+        return null;
+      }
+      if (!fields.length) {
+        alert('At least one field is required.');
+        return null;
+      }
+      if (tableMode === 'Child' && !parentTable) {
+        alert('Child tables need a parent table.');
+        return null;
+      }
+
+      if (parentTable) {
+        const parentField = parentFieldNameForTable(parentTable);
+        if (!fields.some(field => field.name === parentField)) {
+          fields.unshift({ name: parentField, type: 'ref', source_table: parentTable, source_field: 'id' });
+        }
+      }
+
+      const existing = state.schema && state.schema.table === tableName ? state.schema : null;
+      const schema = {
+        table: tableName,
+        table_mode: tableMode,
+        schema_version: existing?.schema_version || 1,
+        parent_table: parentTable,
+        fields,
+        settings: {
+          save_mode: currentSaveMode(),
+          update_on_blur: true,
+          design_complete: document.getElementById('tableDefaultView').value === 'data_entry'
+        },
+        ui_state: collectPanelUiState()
+      };
+      state.dropBindingsPending = collectDropBindings(fields);
+      return schema;
+    }
+
+    function refreshRecordList() {
+      const host = document.getElementById('recordList');
+      host.innerHTML = '';
+
+      const db = getDB();
+      const table = state.schema
+        ? state.schema.table
+        : document.getElementById('tableName').value.trim();
+
+      if (!table) {
+        host.textContent = 'No table is currently selected.';
+        return;
+      }
+
+      const records = Object.values(db.records)
+        .filter(record => record.table === table)
+        .sort((a, b) => (a.display_label || a.id).localeCompare(b.display_label || b.id));
+
+      if (!records.length) {
+        host.textContent = 'No records stored yet.';
+        return;
+      }
+
+      records.forEach(record => {
+        const div = document.createElement('div');
+        div.className = 'record-item';
+        div.textContent = `${record.id} :: ${record.display_label || record.slug || '(no label)'}`;
+        div.onclick = () => loadRecordIntoEditor(record);
+        host.appendChild(div);
+      });
+    }
+
+    function refreshSearchFieldOptions() {
+      const select = document.getElementById('searchFieldSelect');
+      select.innerHTML = '';
+      const allOpt = document.createElement('option');
+      allOpt.value = '__all__';
+      allOpt.textContent = 'All fields';
+      select.appendChild(allOpt);
+      const staticFields = ['id', 'slug', 'display_label'];
+      const fieldNames = state.schema ? state.schema.fields.map(f => f.name) : [];
+      [...staticFields, ...fieldNames].forEach(name => {
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        select.appendChild(opt);
+      });
+    }
+
+    function populateDropSelect(select, field) {
+      const db = getDB();
+      select.innerHTML = '';
+      const blank = document.createElement('option');
+      blank.value = '';
+      blank.textContent = '(select)';
+      select.appendChild(blank);
+      if (!field.source_table || !field.source_field) return;
+      const records = Object.values(db.records).filter(r => r.table === field.source_table);
+      records.sort((a, b) => String(a[field.source_field] || a.display_label || a.id).localeCompare(String(b[field.source_field] || b.display_label || b.id)));
+      records.forEach(record => {
+        const opt = document.createElement('option');
+        opt.value = record.id;
+        opt.textContent = `${record[field.source_field] || record.display_label || record.id} [${record.id}]`;
+        select.appendChild(opt);
+      });
+    }
+
+    function openLinkValue(value) {
+      const link = String(value || '').trim();
+      if (!link) return;
+      if (/^https?:\/\//i.test(link)) {
+        window.open(link, '_blank', 'noopener,noreferrer');
+        return;
+      }
+      if (/^(mailto:|tel:)/i.test(link)) {
+        window.open(link, '_blank', 'noopener,noreferrer');
+        return;
+      }
+      alert(`Stored link/path:
+${link}
+
+Web URLs open directly. File and relative paths are currently stored and displayed, and can be wired to folder resolution next.`);
+    }
+
+    function renderForm(schema, existing = {}) {
+      const formHost = document.getElementById('dynamicForm');
+      formHost.innerHTML = '';
+
+      const staticFields = [
+        { name: 'id', type: 'readonly' },
+        { name: 'slug', type: 'string' },
+        { name: 'display_label', type: 'string' }
+      ];
+
+      [...staticFields, ...schema.fields].forEach(field => {
+        const label = document.createElement('label');
+        label.textContent = field.name + (field.type === 'drop' && field.source_table ? ` → ${field.source_table}.${field.source_field}` : '');
+
+        let input;
+        let wrapper = null;
+
+        if (field.type === 'block') {
+          input = document.createElement('textarea');
+          input.rows = 6;
+        } else if (field.type === 'drop') {
+          input = document.createElement('select');
+          populateDropSelect(input, field);
+        } else if (field.type === 'link') {
+          wrapper = document.createElement('div');
+          wrapper.style.display = 'flex';
+          wrapper.style.gap = '8px';
+          wrapper.style.alignItems = 'center';
+
+          input = document.createElement('input');
+          input.type = 'text';
+          input.style.flex = '1 1 auto';
+
+          const openBtn = document.createElement('button');
+          openBtn.type = 'button';
+          openBtn.textContent = 'Open';
+          openBtn.style.width = 'auto';
+          openBtn.style.minWidth = '80px';
+          openBtn.style.marginTop = '4px';
+          openBtn.addEventListener('click', () => openLinkValue(input.value));
+
+          wrapper.appendChild(input);
+          wrapper.appendChild(openBtn);
+        } else {
+          input = document.createElement('input');
+          input.type = 'text';
+        }
+
+        input.id = 'field_' + field.name;
+        input.dataset.fieldName = field.name;
+        input.dataset.fieldType = field.type;
+        if (field.type === 'readonly') input.readOnly = true;
+        input.value = existing[field.name] || '';
+        input.dataset.originalValue = String(existing[field.name] || '');
+
+        if (field.type !== 'readonly') {
+          input.addEventListener('focus', event => {
+            event.target.dataset.originalValue = String(event.target.value || '');
+          });
+          input.addEventListener('blur', handleFieldBlur);
+        }
+
+        formHost.appendChild(label);
+        if (wrapper) {
+          formHost.appendChild(wrapper);
+        } else {
+          formHost.appendChild(input);
+        }
+      });
+
+      refreshSearchFieldOptions();
+      refreshParentTableOptions();
+      state.currentRecordOriginal = clone(existing || {});
+    }
+
+    function nextIdForTable(table) {
+      const db = getDB();
+      const keys = Object.keys(db.records).filter(key => key.startsWith(table + ':'));
+      const numbers = keys.map(key => {
+        const record = db.records[key];
+        const match = (record.id || '').match(/-(\d+)$/);
+        return match ? Number(match[1]) : 0;
+      });
+      const next = (numbers.length ? Math.max(...numbers) : 0) + 1;
+      return `${table}-${String(next).padStart(4, '0')}`;
+    }
+
+    function collectFormData() {
+      if (!state.schema) return null;
+      const db = getDB();
+      const existingKey = state.currentRecordId ? `${state.schema.table}:${state.currentRecordId}` : null;
+      const existingRecord = existingKey ? db.records[existingKey] : null;
+
+      const data = {};
+      const idField = document.getElementById('field_id');
+      data.id = idField.value.trim() || nextIdForTable(state.schema.table);
+      data.slug = document.getElementById('field_slug').value.trim() || slugify(document.getElementById('field_display_label').value.trim() || data.id);
+      data.display_label = document.getElementById('field_display_label').value.trim();
+
+      state.schema.fields.forEach(field => {
+        const el = document.getElementById('field_' + field.name);
+        data[field.name] = el ? el.value : '';
+      });
+
+      const allForTable = Object.values(db.records)
+        .filter(r => r.table === state.schema.table)
+        .sort((a, b) => (a.id > b.id ? 1 : -1));
+      const existingIndex = allForTable.findIndex(r => r.id === data.id);
+      const prev = existingIndex > 0 ? allForTable[existingIndex - 1].id : data.id;
+      const next = existingIndex >= 0 && existingIndex < allForTable.length - 1 ? allForTable[existingIndex + 1].id : data.id;
+
+      data.table = state.schema.table;
+      data.created = existingRecord?.created || new Date().toISOString();
+      data.updated = new Date().toISOString();
+      data.meta = {
+        schema_version: state.schema.schema_version,
+        record_id: data.id,
+        prev,
+        next,
+        last_verified: new Date().toISOString()
+      };
+      return data;
+    }
+
+    function checksumSimple(text) {
+      let sum = 0;
+      for (let i = 0; i < text.length; i++) sum = (sum + text.charCodeAt(i) * (i + 1)) % 1000000007;
+      return String(sum);
+    }
+
+    function recordToText(record) {
+      const schema = getDB().schemas[record.table] || state.schema;
+      const lines = [];
+      lines.push(`id: ${record.id}`);
+      lines.push(`table: ${record.table}`);
+      lines.push(`slug: ${record.slug}`);
+      lines.push(`display_label: ${record.display_label || ''}`);
+      lines.push(`created: ${record.created}`);
+      lines.push(`updated: ${record.updated}`);
+
+      (schema?.fields || []).forEach(field => {
+        const value = record[field.name] || '';
+        if (field.type === 'block') {
+          lines.push('');
+          lines.push(`[${field.name}]`);
+          lines.push(value);
+          lines.push(`[/${field.name}]`);
+        } else {
+          lines.push(`${field.name}: ${value}`);
+        }
+      });
+
+      const fieldLengths = {};
+      Object.keys(record).forEach(key => {
+        if (key === 'meta') return;
+        fieldLengths[key] = String(record[key] || '').length;
+      });
+
+      const bodySoFar = lines.join('\n');
+      record.meta ||= {};
+      record.meta.field_lengths = fieldLengths;
+      record.meta.checksum = checksumSimple(bodySoFar);
+      lines.push('');
+      lines.push('---meta---');
+      Object.entries(record.meta).forEach(([key, value]) => {
+        lines.push(typeof value === 'object' && value !== null ? `${key}=${JSON.stringify(value)}` : `${key}=${value}`);
+      });
+      return lines.join('\n');
+    }
+
+    function textToRecord(text) {
+      const parts = text.split(/\n---meta---\n/);
+      const body = parts[0] || '';
+      const metaPart = parts[1] || '';
+      const lines = body.split(/\r?\n/);
+      const record = { meta: {} };
+      let i = 0;
+      while (i < lines.length) {
+        const line = lines[i];
+        const blockOpen = line.match(/^\[(.+?)\]$/);
+        if (blockOpen && !line.startsWith('[/')) {
+          const fieldName = blockOpen[1];
+          i += 1;
+          const blockLines = [];
+          while (i < lines.length && lines[i] !== `[/${fieldName}]`) {
+            blockLines.push(lines[i]);
+            i += 1;
+          }
+          record[fieldName] = blockLines.join('\n');
+        } else if (line.includes(': ')) {
+          const idx = line.indexOf(': ');
+          record[line.slice(0, idx).trim()] = line.slice(idx + 2);
+        }
+        i += 1;
+      }
+      metaPart.split(/\r?\n/).filter(Boolean).forEach(line => {
+        const idx = line.indexOf('=');
+        if (idx === -1) return;
+        const key = line.slice(0, idx).trim();
+        const value = line.slice(idx + 1).trim();
+        try {
+          record.meta[key] = value.startsWith('{') ? JSON.parse(value) : value;
+        } catch {
+          record.meta[key] = value;
+        }
+      });
+      return record;
+    }
+
+    function saveSchemaOnlyToBrowser(schema) {
+      const db = getDB();
+      db.schemas[schema.table] = schema;
+      saveDB(db);
+    }
+
+    function loadSchemaIntoDesigner(tableName) {
+      const db = getDB();
+      const schema = db.schemas[tableName];
+      if (!schema) return;
+      state.schema = clone(schema);
+      document.getElementById('tableName').value = schema.table;
+      document.getElementById('tableModeSelect').value = schema.table_mode || 'Normal';
+      tableModeChanged();
+      refreshParentTableOptions();
+      document.getElementById('parentTableSelect').value = schema.parent_table || '';
+      document.getElementById('tableDefaultView').value = schema.ui_state?.default_view || (schema.settings?.design_complete ? 'data_entry' : 'design');
+      document.getElementById('fieldsInput').value = (schema.fields || []).map(field => `${field.name}:${field.type}`).join('\n');
+      renderSchemaPreview(state.schema);
+      renderForm(state.schema, {});
+      refreshRecordList();
+      refreshParentTableOptions();
+      applyPanelUiState(schema.ui_state || state.globalUiState);
+    }
+
+    async function updateSharedBacklinksForRecord(record) {
+      const db = getDB();
+      const schema = db.schemas[record.table];
+      if (!schema) return;
+      for (const field of schema.fields || []) {
+        if (field.type !== 'drop' || !field.source_table) continue;
+        const sharedRecordId = record[field.name];
+        if (!sharedRecordId) continue;
+        const sharedKey = `${field.source_table}:${sharedRecordId}`;
+        const sharedRecord = db.records[sharedKey];
+        if (!sharedRecord) continue;
+        const backlink = `${record.table}/records/${record.id}__${record.slug}.txt`;
+        let usedBy = String(sharedRecord.used_by || '').split(/\r?\n/).map(x => x.trim()).filter(Boolean);
+        if (!usedBy.includes(backlink)) usedBy.push(backlink);
+        sharedRecord.used_by = usedBy.sort().join('\n');
+        sharedRecord.updated = new Date().toISOString();
+        db.records[sharedKey] = sharedRecord;
+        if (state.folderHandle) await saveRecordToFolder(sharedRecord);
+      }
+      saveDB(db);
+    }
+
+    async function saveSchemaToFolder(schema) {
+      if (!state.folderHandle) return;
+      const tableDir = await state.folderHandle.getDirectoryHandle(schema.table, { create: true });
+      const schemaFile = await tableDir.getFileHandle('schema.json', { create: true });
+      const writable = await schemaFile.createWritable();
+      await writable.write(JSON.stringify(schema, null, 2));
+      await writable.close();
+      await tableDir.getDirectoryHandle('records', { create: true });
+    }
+
+    async function saveRecordToFolder(record) {
+      if (!state.folderHandle) return;
+      const tableDir = await state.folderHandle.getDirectoryHandle(record.table, { create: true });
+      const recordsDir = await tableDir.getDirectoryHandle('records', { create: true });
+      const fileName = `${record.id}__${record.slug}.txt`;
+      const fileHandle = await recordsDir.getFileHandle(fileName, { create: true });
+      const writable = await fileHandle.createWritable();
+      await writable.write(recordToText(record));
+      await writable.close();
+    }
+
+    async function saveManifestToFolder(tableName) {
+      if (!state.folderHandle) return;
+      const db = getDB();
+      const schema = db.schemas[tableName];
+      if (!schema) return;
+      const records = Object.values(db.records).filter(r => r.table === tableName).sort((a, b) => (a.id > b.id ? 1 : -1));
+      const manifest = {
+        table: tableName,
+        table_mode: schema.table_mode,
+        schema_version: schema.schema_version,
+        parent_table: schema.parent_table || '',
+        settings: schema.settings || {},
+        ui_state: schema.ui_state || {},
+        head: records.length ? records[0].id : null,
+        tail: records.length ? records[records.length - 1].id : null,
+        record_count: records.length,
+        exported: new Date().toISOString(),
+        records: records.map(r => ({ id: r.id, slug: r.slug, display_label: r.display_label || '' }))
+      };
+      const tableDir = await state.folderHandle.getDirectoryHandle(tableName, { create: true });
+      const fileHandle = await tableDir.getFileHandle('manifest.json', { create: true });
+      const writable = await fileHandle.createWritable();
+      await writable.write(JSON.stringify(manifest, null, 2));
+      await writable.close();
+    }
+
+    async function saveAllToFolder() {
+      if (!state.folderHandle) {
+        alert('Choose a database folder first.');
+        return;
+      }
+      const db = getDB();
+      for (const schema of Object.values(db.schemas)) await saveSchemaToFolder(schema);
+      for (const record of Object.values(db.records)) await saveRecordToFolder(record);
+      for (const tableName of Object.keys(db.schemas)) await saveManifestToFolder(tableName);
+      setStorageStatus('Saved schemas, records, and manifests to the selected folder.');
+    }
+
+    async function loadAllFromFolder() {
+      if (!state.folderHandle) {
+        alert('Choose a database folder first.');
+        return;
+      }
+      const db = { schemas: {}, records: {}, settings: { global_ui_state: clone(DEFAULT_UI_STATE) } };
+      for await (const entry of state.folderHandle.values()) {
+        if (entry.kind !== 'directory') continue;
+        const tableName = entry.name;
+        let schema = null;
+        try {
+          const schemaHandle = await entry.getFileHandle('schema.json');
+          const schemaFile = await schemaHandle.getFile();
+          schema = JSON.parse(await schemaFile.text());
+          db.schemas[tableName] = schema;
+        } catch {
+          continue;
+        }
+        try {
+          const recordsDir = await entry.getDirectoryHandle('records');
+          for await (const recordEntry of recordsDir.values()) {
+            if (recordEntry.kind !== 'file') continue;
+            const file = await recordEntry.getFile();
+            const record = textToRecord(await file.text());
+            db.records[`${record.table}:${record.id}`] = record;
+          }
+        } catch {}
+      }
+      saveDB(db);
+      loadGlobalUiState();
+      refreshParentTableOptions();
+      refreshTableList();
+      refreshRecordList();
+      setStorageStatus('Loaded schemas and records from the selected folder.');
+    }
+
+    async function chooseFolder() {
+      if (!window.showDirectoryPicker) {
+        alert('This browser does not support folder access. Chrome or Edge is recommended for this feature.');
+        return;
+      }
+      try {
+        state.folderHandle = await window.showDirectoryPicker();
+        setStorageStatus(`Connected folder: ${state.folderHandle.name}`);
+        await loadAllFromFolder();
+      } catch (error) {
+        console.error(error);
+        setStorageStatus('Folder selection was canceled or failed. Browser storage fallback is active.');
+      }
+    }
+
+    async function saveCurrentRecord() {
+      if (!state.schema) {
+        alert('Build or load a schema first.');
+        return;
+      }
+      const record = collectFormData();
+      if (!record) return;
+      const db = getDB();
+      db.schemas[state.schema.table] = clone(state.schema);
+      db.records[`${record.table}:${record.id}`] = record;
+      saveDB(db);
+      state.currentRecordId = record.id;
+      document.getElementById('field_id').value = record.id;
+      document.getElementById('recordText').value = recordToText(record);
+      state.currentRecordOriginal = clone(record);
+      refreshRecordList();
+      refreshParentTableOptions();
+      refreshTableList();
+      await updateSharedBacklinksForRecord(record);
+      if (state.folderHandle) {
+        await saveSchemaToFolder(state.schema);
+        await saveRecordToFolder(record);
+        await saveManifestToFolder(record.table);
+      }
+    }
+
+    async function handleFieldBlur(event) {
+      if (!state.schema || currentSaveMode() !== 'auto') return;
+      const oldValue = String(event.target.dataset.originalValue || '');
+      const newValue = String(event.target.value || '');
+      if (oldValue === newValue) return;
+
+      const formValues = [...document.querySelectorAll('#dynamicForm input, #dynamicForm textarea, #dynamicForm select')]
+        .map(el => String(el.value || '').trim())
+        .filter(Boolean);
+      if (!formValues.length) return;
+
+      await saveCurrentRecord();
+      event.target.dataset.originalValue = newValue;
+    }
+
+    async function finalizeSchemaSave(schema) {
+      state.schema = schema;
+      saveSchemaOnlyToBrowser(schema);
+      renderSchemaPreview(schema);
+      renderForm(schema, {});
+      refreshRecordList();
+      refreshParentTableOptions();
+      refreshTableList();
+      applyPanelUiState(schema.ui_state || state.globalUiState);
+      if (state.folderHandle) {
+        await saveSchemaToFolder(schema);
+        await saveManifestToFolder(schema.table);
+      }
+      alert('Schema saved.');
+    }
+
+    async function saveCurrentSchema() {
+      const schema = buildSchemaObject();
+      if (!schema) return;
+      if (state.dropBindingsPending.length) {
+        state.schema = schema;
+        openDropDialog(0);
+        return;
+      }
+      await finalizeSchemaSave(schema);
+    }
+
+    function openDropDialog(index) {
+      const pending = state.dropBindingsPending[index];
+      if (!pending) {
+        finalizeSchemaSave(state.schema);
+        return;
+      }
+      state.dropDialog = { open: true, phase: 'table', index, page: 0, selectedTable: '', selectedField: '' };
+      renderDropDialog();
+    }
+
+    function paginate(list, pageSize, page) {
+      const start = page * pageSize;
+      return list.slice(start, start + pageSize);
+    }
+
+    function renderDropDialog() {
+      const backdrop = document.getElementById('dropDialogBackdrop');
+      if (!state.dropDialog.open) {
+        backdrop.style.display = 'none';
+        return;
+      }
+      backdrop.style.display = 'flex';
+      const title = document.getElementById('dropDialogTitle');
+      const msg = document.getElementById('dropDialogMessage');
+      const choices = document.getElementById('dropDialogChoices');
+      const backBtn = document.getElementById('dropDialogBackBtn');
+      const nextBtn = document.getElementById('dropDialogNextBtn');
+      const okBtn = document.getElementById('dropDialogOkBtn');
+      const pending = state.dropBindingsPending[state.dropDialog.index];
+      const db = getDB();
+
+      choices.innerHTML = '';
+      if (state.dropDialog.phase === 'table') {
+        title.textContent = `Bind drop field: ${pending.name}`;
+        msg.textContent = 'Choose a Shared table, then press Okay to choose its display field.';
+        const sharedTables = Object.values(db.schemas).filter(schema => schema.table_mode === 'Shared').map(schema => schema.table).sort();
+        const pageItems = paginate(sharedTables, 4, state.dropDialog.page);
+        pageItems.forEach(name => {
+          const btn = document.createElement('button');
+          btn.textContent = name;
+          btn.onclick = () => {
+            state.dropDialog.selectedTable = name;
+            renderDropDialog();
+          };
+          if (state.dropDialog.selectedTable === name) btn.style.background = '#dde8ff';
+          choices.appendChild(btn);
+        });
+        while (choices.children.length < 4) {
+          const btn = document.createElement('button');
+          btn.disabled = true;
+          btn.textContent = '(empty)';
+          choices.appendChild(btn);
+        }
+        backBtn.disabled = state.dropDialog.page === 0;
+        nextBtn.disabled = (state.dropDialog.page + 1) * 4 >= sharedTables.length;
+        okBtn.disabled = !state.dropDialog.selectedTable;
+      } else {
+        title.textContent = `Field for ${state.dropDialog.selectedTable}`;
+        msg.textContent = 'Choose which field should supply the dropdown label, then press Okay to bind it.';
+        const schema = db.schemas[state.dropDialog.selectedTable];
+        const fieldNames = (schema?.fields || []).map(field => field.name);
+        const pageItems = paginate(fieldNames, 4, state.dropDialog.page);
+        pageItems.forEach(name => {
+          const btn = document.createElement('button');
+          btn.textContent = name;
+          btn.onclick = () => {
+            state.dropDialog.selectedField = name;
+            renderDropDialog();
+          };
+          if (state.dropDialog.selectedField === name) btn.style.background = '#dde8ff';
+          choices.appendChild(btn);
+        });
+        while (choices.children.length < 4) {
+          const btn = document.createElement('button');
+          btn.disabled = true;
+          btn.textContent = '(empty)';
+          choices.appendChild(btn);
+        }
+        backBtn.disabled = state.dropDialog.page === 0;
+        nextBtn.disabled = (state.dropDialog.page + 1) * 4 >= fieldNames.length;
+        okBtn.disabled = !state.dropDialog.selectedField;
+      }
+    }
+
+    function closeDropDialog() {
+      state.dropDialog.open = false;
+      renderDropDialog();
+    }
+
+    async function confirmDropDialog() {
+      const pending = state.dropBindingsPending[state.dropDialog.index];
+      if (!pending) return;
+
+      if (state.dropDialog.phase === 'table') {
+        if (!state.dropDialog.selectedTable) {
+          alert('Choose a Shared table first.');
+          return;
+        }
+        const db = getDB();
+        const schema = db.schemas[state.dropDialog.selectedTable];
+        const fieldNames = (schema?.fields || []).map(field => field.name);
+        if (!fieldNames.length) {
+          alert('That Shared table does not have any fields to bind.');
+          return;
+        }
+        state.dropDialog.phase = 'field';
+        state.dropDialog.page = 0;
+        state.dropDialog.selectedField = '';
+        renderDropDialog();
+        return;
+      }
+
+      if (!state.dropDialog.selectedField) {
+        alert('Choose a field first.');
+        return;
+      }
+
+      const field = state.schema.fields.find(f => f.name === pending.name);
+      if (field) {
+        field.source_table = state.dropDialog.selectedTable;
+        field.source_field = state.dropDialog.selectedField;
+      }
+
+      const nextIndex = state.dropDialog.index + 1;
+      closeDropDialog();
+      if (nextIndex < state.dropBindingsPending.length) {
+        openDropDialog(nextIndex);
+      } else {
+        state.dropBindingsPending = [];
+        await finalizeSchemaSave(state.schema);
+      }
+    }
+
+    function normalizeForSearch(value, caseInsensitive) {
+      const text = String(value || '').replace(/\s+/g, ' ').trim();
+      return caseInsensitive ? text.toLowerCase() : text;
+    }
+
+    function wrapText(text, width = 72) {
+      const normalized = String(text || '').replace(/\s+/g, ' ').trim();
+      if (!normalized) return '';
+      const words = normalized.split(' ');
+      const lines = [];
+      let current = '';
+      for (const word of words) {
+        if (!current) current = word;
+        else if ((current + ' ' + word).length <= width) current += ' ' + word;
+        else { lines.push(current); current = word; }
+      }
+      if (current) lines.push(current);
+      return lines.join('\n');
+    }
+
+    function getSearchableFields(record) {
+      const fields = { id: record.id || '', slug: record.slug || '', display_label: record.display_label || '' };
+      if (state.schema) state.schema.fields.forEach(field => { fields[field.name] = record[field.name] || ''; });
+      return fields;
+    }
+
+    function buildPreview(text, query, caseInsensitive, width = 72) {
+      const raw = String(text || '').replace(/\s+/g, ' ').trim();
+      if (!raw) return '';
+      const haystack = caseInsensitive ? raw.toLowerCase() : raw;
+      const needle = caseInsensitive ? query.toLowerCase() : query;
+      const index = haystack.indexOf(needle);
+      const start = Math.max(0, index - 50);
+      const end = index >= 0 ? Math.min(raw.length, index + needle.length + 90) : Math.min(raw.length, 140);
+      return wrapText(raw.slice(start, end), width);
+    }
+
+    function executeSearch() {
+      if (!state.schema) {
+        alert('Build or load a schema first.');
+        return;
+      }
+      const query = document.getElementById('searchInput').value.trim();
+      if (!query) {
+        alert('Enter search text.');
+        return;
+      }
+      const selectedField = document.getElementById('searchFieldSelect').value;
+      const caseInsensitive = document.getElementById('caseInsensitiveCheckbox').checked;
+      const normalizedQuery = caseInsensitive ? query.toLowerCase() : query;
+      const db = getDB();
+      const records = Object.values(db.records).filter(r => r.table === state.schema.table);
+      const matches = [];
+      records.forEach(record => {
+        const fields = getSearchableFields(record);
+        const fieldNames = selectedField === '__all__' ? Object.keys(fields) : [selectedField];
+        fieldNames.forEach(fieldName => {
+          const value = fields[fieldName];
+          if (normalizeForSearch(value, caseInsensitive).includes(normalizedQuery)) {
+            matches.push({ recordId: record.id, fieldName, preview: buildPreview(value, query, caseInsensitive), displayLabel: record.display_label || record.slug || record.id });
+          }
+        });
+      });
+      state.searchResults = matches;
+      state.currentMatchIndex = matches.length ? 0 : -1;
+      renderSearchResults();
+      focusCurrentMatch();
+    }
+
+    function renderSearchResults() {
+      const host = document.getElementById('searchResults');
+      const status = document.getElementById('searchStatus');
+      host.innerHTML = '';
+      if (!state.searchResults.length) {
+        status.textContent = 'No matches found.';
+        host.textContent = 'No search results.';
+        return;
+      }
+      status.textContent = `Matches: ${state.searchResults.length}. Current: ${state.currentMatchIndex + 1}.`;
+      state.searchResults.forEach((match, index) => {
+        const div = document.createElement('div');
+        div.className = `record-item${index === state.currentMatchIndex ? ' active' : ''}`;
+        div.innerHTML = `<strong>${match.recordId}</strong> :: ${match.displayLabel}<br><span class="small">Field: ${match.fieldName}</span><pre>${match.preview}</pre>`;
+        div.onclick = () => { state.currentMatchIndex = index; focusCurrentMatch(); renderSearchResults(); };
+        host.appendChild(div);
+      });
+    }
+
+    function focusCurrentMatch() {
+      if (state.currentMatchIndex < 0 || !state.searchResults.length) return;
+      const match = state.searchResults[state.currentMatchIndex];
+      const db = getDB();
+      const record = db.records[`${state.schema.table}:${match.recordId}`];
+      if (record) loadRecordIntoEditor(record);
+      document.getElementById('searchStatus').textContent = `Matches: ${state.searchResults.length}. Current: ${state.currentMatchIndex + 1}.`;
+    }
+
+    function moveSearchMatch(direction) {
+      if (!state.searchResults.length) return;
+      const count = state.searchResults.length;
+      state.currentMatchIndex = (state.currentMatchIndex + direction + count) % count;
+      focusCurrentMatch();
+      renderSearchResults();
+    }
+
+    function clearSearch() {
+      state.searchResults = [];
+      state.currentMatchIndex = -1;
+      document.getElementById('searchStatus').textContent = 'No active search.';
+      document.getElementById('searchResults').innerHTML = '';
+    }
+
+    function renderChildRecords() {
+      const host = document.getElementById('childRecordList');
+      const status = document.getElementById('subtableStatus');
+      host.innerHTML = '';
+      if (!state.schema || !state.currentRecordId) {
+        status.textContent = 'Load a parent record first.';
+        host.textContent = 'No child records to display.';
+        return;
+      }
+      const childTable = document.getElementById('childTableSelect').value;
+      if (!childTable) {
+        status.textContent = 'Choose a child table.';
+        host.textContent = 'No child records to display.';
+        return;
+      }
+      const db = getDB();
+      const childSchema = db.schemas[childTable];
+      if (!childSchema) {
+        status.textContent = 'Selected child table schema was not found.';
+        host.textContent = 'No child records to display.';
+        return;
+      }
+      const parentField = parentFieldNameForTable(state.schema.table);
+      const children = Object.values(db.records)
+        .filter(record => record.table === childTable && record[parentField] === state.currentRecordId)
+        .sort((a, b) => (a.display_label || a.id).localeCompare(b.display_label || b.id));
+      status.textContent = `Child records for ${state.currentRecordId}: ${children.length}`;
+      if (!children.length) {
+        host.textContent = 'No child records found.';
+        return;
+      }
+      children.forEach(record => {
+        const div = document.createElement('div');
+        div.className = 'record-item';
+        div.textContent = `${record.id} :: ${record.display_label || record.slug || '(no label)'}`;
+        div.onclick = () => loadRecordIntoEditor(record);
+        host.appendChild(div);
+      });
+    }
+
+    function newChildRecordForCurrentParent() {
+      if (!state.schema || !state.currentRecordId) {
+        alert('Load a parent record first.');
+        return;
+      }
+      const childTable = document.getElementById('childTableSelect').value;
+      if (!childTable) {
+        alert('Choose a child table first.');
+        return;
+      }
+      const db = getDB();
+      const childSchema = db.schemas[childTable];
+      if (!childSchema) {
+        alert('Child schema not found.');
+        return;
+      }
+      const parentRecordId = state.currentRecordId;
+      state.schema = clone(childSchema);
+      renderSchemaPreview(childSchema);
+      const parentField = parentFieldNameForTable(schemaParentTable(childSchema));
+      const seed = {};
+      if (parentField) seed[parentField] = parentRecordId;
+      renderForm(childSchema, seed);
+      state.currentRecordId = null;
+      document.getElementById('recordText').value = '';
+      document.getElementById('subtableStatus').textContent = `New child record seeded with ${parentField}: ${seed[parentField] || ''}`;
+      refreshRecordList();
+      applyPanelUiState(childSchema.ui_state || state.globalUiState);
+    }
+
+    function downloadText(filename, text) {
+      const blob = new Blob([text], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function exportCurrentRecord() {
+      const record = collectFormData();
+      if (!record) return;
+      downloadText(`${record.id}__${record.slug}.txt`, recordToText(record));
+    }
+
+    function exportManifest() {
+      if (!state.schema) {
+        alert('Build or load a schema first.');
+        return;
+      }
+      const db = getDB();
+      const records = Object.values(db.records).filter(r => r.table === state.schema.table).sort((a, b) => (a.id > b.id ? 1 : -1));
+      const manifest = {
+        table: state.schema.table,
+        table_mode: state.schema.table_mode,
+        schema_version: state.schema.schema_version,
+        parent_table: state.schema.parent_table || '',
+        settings: state.schema.settings || {},
+        ui_state: state.schema.ui_state || {},
+        head: records.length ? records[0].id : null,
+        tail: records.length ? records[records.length - 1].id : null,
+        record_count: records.length,
+        exported: new Date().toISOString(),
+        records: records.map(r => ({ id: r.id, slug: r.slug, display_label: r.display_label || '' }))
+      };
+      downloadText(`${state.schema.table}_manifest.json`, JSON.stringify(manifest, null, 2));
+    }
+
+    function loadSampleSchema() {
+      document.getElementById('tableName').value = 'personnel';
+      document.getElementById('tableModeSelect').value = 'Normal';
+      tableModeChanged();
+      document.getElementById('fieldsInput').value = ['sort_name:string', 'status:drop', 'email:string', 'notes:block'].join('\n');
+      document.getElementById('parentTableSelect').value = '';
+      document.getElementById('tableDefaultView').value = 'design';
+    }
+
+    function loadRecordIntoEditor(record) {
+      const db = getDB();
+      state.schema = clone(db.schemas[record.table] || state.schema);
+      if (state.schema) {
+        document.getElementById('tableName').value = state.schema.table;
+        document.getElementById('tableModeSelect').value = state.schema.table_mode || 'Normal';
+        tableModeChanged();
+        refreshParentTableOptions();
+        document.getElementById('parentTableSelect').value = state.schema.parent_table || '';
+        document.getElementById('tableDefaultView').value = state.schema.ui_state?.default_view || 'data_entry';
+        document.getElementById('fieldsInput').value = (state.schema.fields || []).map(field => `${field.name}:${field.type}`).join('\n');
+        renderSchemaPreview(state.schema);
+        renderForm(state.schema, record);
+        applyPanelUiState(state.schema.ui_state || state.globalUiState);
+      }
+      state.currentRecordId = record.id;
+      document.getElementById('recordText').value = recordToText(record);
+      refreshParentTableOptions();
+      refreshRecordList();
+    }
+
+    async function importRecordText() {
+      const text = document.getElementById('recordText').value;
+      if (!text.trim()) {
+        alert('Paste record text first.');
+        return;
+      }
+      const record = textToRecord(text);
+      if (!record.table || !record.id) {
+        alert('Record text must include at least table and id.');
+        return;
+      }
+      const db = getDB();
+      const schema = db.schemas[record.table] || state.schema;
+      if (!schema) {
+        alert('No schema is available for the imported record table.');
+        return;
+      }
+      db.schemas[record.table] = clone(schema);
+      db.records[`${record.table}:${record.id}`] = record;
+      saveDB(db);
+      state.schema = clone(schema);
+      renderSchemaPreview(schema);
+      renderForm(schema, record);
+      refreshRecordList();
+      refreshParentTableOptions();
+      refreshTableList();
+      if (state.folderHandle) {
+        await saveSchemaToFolder(schema);
+        await saveRecordToFolder(record);
+        await saveManifestToFolder(record.table);
+      }
+      alert('Record imported.');
+    }
+    function openProjectRepository() {
+      window.open(PROJECT_REPO_URL, '_blank', 'noopener,noreferrer');
+    }
+    function toggleAboutHistory() {
+      const el = document.getElementById('aboutDetails');
+      const btn = document.getElementById('aboutHistoryBtn');
+      const isHidden = el.style.display === 'none';
+      el.style.display = isHidden ? 'block' : 'none';
+      btn.textContent = isHidden ? 'Hide Development History' : 'Show Development History';
+
+    }
+    function initializeApp() {
+      loadGlobalUiState();
+      applyPanelUiState(state.globalUiState);
+      loadSampleSchema();
+      refreshParentTableOptions();
+      refreshTableList();
+      refreshRecordList();
+      tableModeChanged();
+      document.getElementById('saveModeAuto').checked = true;
+    }
+
+    document.querySelectorAll('.toggle-panel-btn').forEach(btn => {
+      btn.addEventListener('click', () => handlePanelToggle(btn.dataset.target));
+    });
+
+    document.getElementById('tableModeSelect').addEventListener('change', tableModeChanged);
+    document.getElementById('tableDefaultView').addEventListener('change', () => {
+      if (state.schema) {
+        state.schema.ui_state ||= clone(DEFAULT_UI_STATE);
+        state.schema.ui_state.default_view = document.getElementById('tableDefaultView').value;
+        saveSchemaOnlyToBrowser(state.schema);
+      }
+    });
+
+    document.getElementById('chooseFolderBtn').addEventListener('click', chooseFolder);
+    document.getElementById('reloadFolderBtn').addEventListener('click', loadAllFromFolder);
+    document.getElementById('saveAllBtn').addEventListener('click', saveAllToFolder);
+    document.getElementById('refreshTablesBtn').addEventListener('click', refreshTableList);
+
+    document.getElementById('buildSchemaBtn').addEventListener('click', () => {
+      const schema = buildSchemaObject();
+      if (!schema) return;
+      state.schema = schema;
+      renderSchemaPreview(schema);
+      renderForm(schema, {});
+      refreshRecordList();
+      refreshParentTableOptions();
+      refreshTableList();
+    });
+    document.getElementById('saveSchemaBtn').addEventListener('click', saveCurrentSchema);
+    document.getElementById('loadSampleBtn').addEventListener('click', loadSampleSchema);
+
+    document.getElementById('newRecordBtn').addEventListener('click', () => {
+      if (!state.schema) {
+        alert('Build or load a schema first.');
+        return;
+      }
+      renderForm(state.schema, {});
+      document.getElementById('recordText').value = '';
+      state.currentRecordId = null;
+    });
+    document.getElementById('saveRecordBtn').addEventListener('click', saveCurrentRecord);
+    document.getElementById('exportRecordBtn').addEventListener('click', exportCurrentRecord);
+    document.getElementById('refreshListBtn').addEventListener('click', refreshRecordList);
+    document.getElementById('exportManifestBtn').addEventListener('click', exportManifest);
+
+    document.getElementById('parseTextBtn').addEventListener('click', () => {
+      const text = document.getElementById('recordText').value;
+      if (!text.trim()) return;
+      const record = textToRecord(text);
+      const db = getDB();
+      if (!state.schema && record.table && db.schemas[record.table]) state.schema = clone(db.schemas[record.table]);
+      if (!state.schema) {
+        alert('No schema loaded for this record. Build or load the table schema first.');
+        return;
+      }
+      renderForm(state.schema, record);
+      state.currentRecordId = record.id || null;
+    });
+    document.getElementById('importTextBtn').addEventListener('click', importRecordText);
+    document.getElementById('fileInput').addEventListener('change', async event => {
+      const file = event.target.files[0];
+      if (!file) return;
+      document.getElementById('recordText').value = await file.text();
+    });
+
+    document.getElementById('searchBtn').addEventListener('click', executeSearch);
+    document.getElementById('prevMatchBtn').addEventListener('click', () => moveSearchMatch(-1));
+    document.getElementById('nextMatchBtn').addEventListener('click', () => moveSearchMatch(1));
+    document.getElementById('clearSearchBtn').addEventListener('click', clearSearch);
+
+    document.getElementById('showChildrenBtn').addEventListener('click', renderChildRecords);
+    document.getElementById('newChildRecordBtn').addEventListener('click', newChildRecordForCurrentParent);
+
+    document.getElementById('dropDialogBackBtn').addEventListener('click', () => {
+      if (state.dropDialog.phase === 'field' && state.dropDialog.page === 0) {
+        state.dropDialog.phase = 'table';
+        state.dropDialog.page = 0;
+        renderDropDialog();
+        return;
+      }
+      if (state.dropDialog.page > 0) {
+        state.dropDialog.page -= 1;
+        renderDropDialog();
+      }
+    });
+    document.getElementById('dropDialogNextBtn').addEventListener('click', () => {
+      state.dropDialog.page += 1;
+      renderDropDialog();
+    });
+    document.getElementById('dropDialogCancelBtn').addEventListener('click', () => {
+      state.dropBindingsPending = [];
+      closeDropDialog();
+    });
+    document.getElementById('dropDialogOkBtn').addEventListener('click', confirmDropDialog);
+    document.getElementById('aboutRepoBtn').addEventListener('click', openProjectRepository);
+    document.getElementById('aboutHistoryBtn').addEventListener('click', toggleAboutHistory);
+    initializeApp();
+  </script>
+</body>
+</html>
