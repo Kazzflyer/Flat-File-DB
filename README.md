@@ -1,6 +1,6 @@
 # Flat-File-DB
 
-Transparency, resilience, real files in folders that are the database.
+Transparency, Simplicity, resilience, and real files in folders that are the database.
 
 ## Overview
 
