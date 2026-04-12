@@ -48,7 +48,7 @@ This project is the continuation of a long-running idea:
 * **Intuitus (unreleased)**
   Conceptual successor focusing on flexible schemas and better text handling
 
-* **Flat File DB V3 (current)**
+* **Flat File DB (current)**
   Modern browser-based realization of those ideas
 
 ---
@@ -112,7 +112,7 @@ Introduced ideas:
 
 ---
 
-## Flat File DB V3
+## Flat File DB
 
 Realization of the original vision using modern tools:
 
