@@ -128,6 +128,12 @@ Realization of the original vision using modern tools:
 
 ## Future Directions
 
+* New table type called "split" Upper portion of Record editor to
+  view data from other tables that are related. Or when in a child table,
+  the upper half shows user defined fields from parent or other tables to
+  provide context for the user entering data.
+* Query builder to generate .csv files
+* Storage synchronizer, so non-chrome browsers can work on external databases
 * File-system aware link resolution
 * Visualization of relationships
 * Schema evolution tools
